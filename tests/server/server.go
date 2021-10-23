@@ -1,25 +1,26 @@
 package main
 
 import (
-	"finger2011/simpleRPC/internel/server"
+	internelserver "finger2011/simpleRPC/internel/server"
 	"fmt"
 	"log"
 	"net/http"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
-}
-
+//UserService 自定义service
 type UserService struct {
 	internelserver.Service
 }
+
+//ServiceName base service方法，获取service名称
 func (u *UserService) ServiceName() string {
 	return "UserService"
 }
 
-func (u *UserService) SayHello(input *internelserver.Input) (string, error) {
-	return "hello, user:" + input.Name, nil
+//SayHello service自身方法
+func (u *UserService) SayHello(name string, age float64) (string, error) {
+	// fmt.Printf("call name:" + name + "age:" + fmt.Sprintf("%2f", age))
+	return "hello, user:" + name + "; age:" + fmt.Sprintf("%2f", age), nil
 }
 
 func main() {

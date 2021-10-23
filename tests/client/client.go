@@ -7,9 +7,8 @@ import (
 
 func main() {
 	fmt.Println("client start")
-	var url = "http://localhost:8080/golang"
-	var input = internelclient.Input{Name: "golang"}
-	output, err := internelclient.Call("UserService", "SayHello", url, input)
+	var client = internelclient.Client{Endpoint: "http://localhost:8080/"}
+	output, err := client.Call("UserService", "SayHello", "golang", 10.0)
 	if err != nil {
 		fmt.Println(err)
 		return

@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
-type client interface {
+//Client 入口
+type Client struct {
+	Endpoint string
 }
 
 //Input 输入
@@ -17,16 +20,21 @@ type Input struct {
 
 //Output 输入
 type Output struct {
-	Data map[string]interface{}
+	Out []interface{}
+	Err error
 }
 
 //Call call remote function
-func Call(serviceName, methodName, url string, input Input) (Output, error) {
+func (c *Client) Call(serviceName, methodName string, input ...interface{}) (Output, error) {
 	var output Output
-	output.Data = make(map[string]interface{})
-	var inData, _ = json.Marshal(input)
+	//TODO 不同的序列化/反序列化协议
+	var in = make([]interface{}, len(input))
+	for i := 0; i < len(input); i++ {
+		in[i] = input[i]
+	}
+	var inData, _ = json.Marshal(in)
 	var client = &http.Client{}
-	req, err := http.NewRequest(methodName, url, bytes.NewReader(inData))
+	req, err := http.NewRequest(methodName, c.Endpoint, bytes.NewReader(inData))
 	if err != nil {
 		return output, err
 	}
@@ -34,13 +42,20 @@ func Call(serviceName, methodName, url string, input Input) (Output, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("simple-rpc-service", serviceName)
 	req.Header.Set("simple-rpc-method", methodName)
+	req.Header.Set("simple-rpc-num", strconv.Itoa(len(in)))
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return output, nil
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
-	output.Data["data"] = string(data)
-	// _ = json.Unmarshal(data, output.Data["data"])
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return Output{}, err
+	}
+	_ = json.Unmarshal(data, &output)
+	if output.Err != nil {
+		return Output{}, output.Err
+	}
+
 	return output, nil
 }
