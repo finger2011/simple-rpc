@@ -18,9 +18,9 @@ func (u *UserService) ServiceName() string {
 }
 
 //SayHello service自身方法
-func (u *UserService) SayHello(name string, age float64) (string, error) {
+func (u *UserService) SayHello(name string, age int) (string, error) {
 	// fmt.Printf("call name:" + name + "age:" + fmt.Sprintf("%2f", age))
-	return "hello, user:" + name + "; age:" + fmt.Sprintf("%2f", age), nil
+	return "hello, user:" + name + "; age:" + fmt.Sprintf("%d", age), nil
 }
 
 func main() {

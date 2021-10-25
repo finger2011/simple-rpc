@@ -13,11 +13,6 @@ type Service interface {
 	ServiceName() string
 }
 
-//Input 输入
-type Input struct {
-	Name string
-}
-
 //存储所有注册的service
 var services sync.Map
 

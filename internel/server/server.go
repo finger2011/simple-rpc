@@ -29,6 +29,14 @@ type response struct {
 	Err error
 }
 
+//Input 输入
+type Input struct {
+	//数据
+	In []interface{}
+	//数据对应类型
+	InTypes []reflect.Kind
+}
+
 //InitRPCServer init rpc server
 func InitRPCServer(opts ...ServerOption) error {
 	Server = &SimpleRPCServer{
@@ -59,8 +67,11 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			Err: errParamLength,
 		}
 	} else {
-		input := make([]interface{}, num)
+		// input := make([]interface{}, num)
+		input := Input{In: make([]interface{}, num), InTypes: make([]reflect.Kind, num)}
+		
 		_ = json.Unmarshal(data, &input)
+		fmt.Printf("input:%v\n", input)
 		service, _ := GetService(serviceName)
 		res, err := callMethod(service, methodName, input)
 		respon = response{
@@ -82,10 +93,10 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	_, err = w.Write(output)
 	if err != nil {
 		fmt.Printf("write to response error:%v\n", err)
-	} 
+	}
 }
 
-func callMethod(s Service, methodName string, input []interface{}) ([]reflect.Value, error) {
+func callMethod(s Service, methodName string, input Input) ([]reflect.Value, error) {
 	val := reflect.ValueOf(s)
 	method := val.MethodByName(methodName)
 	var matchable, in = inParamterMatch(method, input)
@@ -96,20 +107,23 @@ func callMethod(s Service, methodName string, input []interface{}) ([]reflect.Va
 	return method.Call(in), nil
 }
 
-func inParamterMatch(fn reflect.Value, values []interface{}) (bool, []reflect.Value) {
+func inParamterMatch(fn reflect.Value, input Input) (bool, []reflect.Value) {
 	if fn.Kind() != reflect.Func {
 		return false, nil
 	}
-	if fn.Type().NumIn() != len(values) {
+	if fn.Type().NumIn() != len(input.In) {
 		return false, nil
 	}
 	var in = make([]reflect.Value, fn.Type().NumIn())
-	for i := 0; i < len(values); i++ {
-		if fn.Type().In(i) != reflect.TypeOf(values[i]) {
+	for i := 0; i < len(input.In); i++ {
+		if fn.Type().In(i).Kind() != input.InTypes[i] {
 			//TODO int类型会被json Unmarshal为float64
 			return false, nil
 		}
-		in[i] = reflect.ValueOf(values[i])
+		in[i] = reflect.ValueOf(input.In[i])
+		if input.InTypes[i] != reflect.TypeOf(in[i]).Kind() {
+			in[i] = in[i].Convert(fn.Type().In(i))
+		}
 	}
 	return true, in
 }
